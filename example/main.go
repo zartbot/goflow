@@ -8,6 +8,8 @@ import (
 
 	"github.com/zartbot/goflow/service/ciscoavc"
 	"github.com/zartbot/goflow/service/ciscoeta"
+	"github.com/zartbot/goflow/service/flowinfo"
+	"github.com/zartbot/goflow/service/geoipmap"
 	"github.com/zartbot/goflow/service/identity"
 	"github.com/zartbot/goflow/service/optiontemplatemap"
 
@@ -15,13 +17,11 @@ import (
 	"github.com/zartbot/goflow/iedb"
 	"github.com/zartbot/goflow/ipfix"
 	"github.com/zartbot/goflow/netflowv9"
-
 )
 
 func main() {
 
 	ipaddr := "0.0.0.0"
-
 
 	iedb.ReadIANA("./config/database/informationElement/iana_ie.csv")
 	iedb.ReadCiscoIE("./config/database/informationElement/cisco_ie.csv")
@@ -33,6 +33,8 @@ func main() {
 	identity.LoadReputationInfo("./config/database/security/reputation.csv")
 	identity.LoadBotnetInfo("./config/database/security/spam_bot_net.csv")
 	go identity.Run()
+
+	//g, geoServiceErr := geoipmap.NewGeoIPCollector("./config/database/geolocation/city.mmdb", "./config/database/geolocation/asn.mmdb", 31.123, 111.11)
 
 	logrus.Info("Starting Netflow Collectors.....")
 
@@ -99,7 +101,35 @@ func RecordMap(d *datarecord.DataFrame) {
 		optiontemplatemap.UpdateFWClassMapMap(value, d.AgentID)
 
 		//Additional Service
-		//flowinfo.UpdateFlowInfo(value, true)
+		flowinfo.UpdateFlowInfo(value, true)
+		identity.AddressLookUP(value, true)
+		ciscoavc.ExtendField(value)
+		ciscoeta.ExtendField(value)
+	}
+}
+
+func GeoRecordMap(d *datarecord.DataFrame, g *geoipmap.GeoIPCollector) {
+	d.TypeAssertion()
+	createAt := time.Unix(int64(d.ExportTime), 0)
+	for _, value := range d.Record {
+		value["CreateAt"] = createAt
+		value["AgentID"] = d.AgentID
+		value["Type"] = d.Type
+		//Optional Template Correlation
+		optiontemplatemap.UpdateInterfaceMap(value, d.AgentID)
+		optiontemplatemap.UpdateAppMap(value, d.AgentID)
+		optiontemplatemap.UpdateCiscoVarString(value, d.AgentID)
+		optiontemplatemap.UpdateC3PLMap(value, d.AgentID)
+		optiontemplatemap.UpdateDropCauseMap(value, d.AgentID)
+		optiontemplatemap.UpdateViptelaTLOCMap(value, d.AgentID)
+		optiontemplatemap.UpdateFWEventMap(value, d.AgentID)
+		optiontemplatemap.UpdateFWZonePairMap(value, d.AgentID)
+		optiontemplatemap.UpdateFWClassMapMap(value, d.AgentID)
+
+		//Additional Service
+		flowinfo.UpdateFlowInfo(value, true)
+		identity.AddressLookUP(value, true)
+		geoipmap.UpdateGeoLocationInfo(value, g)
 		ciscoavc.ExtendField(value)
 		ciscoeta.ExtendField(value)
 	}
