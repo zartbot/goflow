@@ -1,0 +1,2 @@
+name,appgroup,owner,hostcategory,hosttype,os,version,location,ipv4,ipv6,speed
+WAN-Router,Network,admin,Network,C1111,Cisco IOS,16.9,Office,192.168.101.1,,1000
