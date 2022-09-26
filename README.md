@@ -3,6 +3,11 @@
 goFlow is a golang based Netflow/IPFIX/Cisco HighSpeed Logging collector.
 The flow record decoder is strictly followed by `RFC3954` and `RFC7011`
 
+Notice:
+
+This work is just used for Cisco FNF demo only and help customer verify the data collected fields.
+Please use commercial software like StealthWatch, DNA-C vManage and LiveAction for production network.
+
 ## Supported features & platforms 
 
 ### platforms
