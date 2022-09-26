@@ -785,3 +785,9 @@ ElementID,EnterpriseNo,FieldType,DataType
 12453,9,sdwan_appqoe_pkt_cxp_d_pkts,unsigned32
 12470,9,cisco_fw_src_dsa_id,unsigned32
 12471,9,cisco_fw_dst_dsa_id,unsigned32
+12527,9,cisco_sdwan_bfd_loss,unsigned32
+12528,9,cisco_sdwan_bfd_latency,unsigned64
+12529,9,cisco_sdwan_bfd_jitter,unsigned64
+12530,9,cisco_sdwan_bfd_update_ts,unsigned64
+12531,9,cisco_sdwan_bfd_rx_cnt,unsigned64
+12532,9,cisco_sdwan_bfd_tx_cnt,unsigned64

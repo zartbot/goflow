@@ -17,9 +17,6 @@ import (
   | tloc tunnel protocol                    | 12440 |      9 |     36 |     8 |
   | tloc local system ip address            | 12436 |      9 |     44 |     4 |
   | tloc remote system ip address           | 12438 |      9 |     48 |     4 |
-  | sdwan bfd-loss                          | 12512 |      9 |     52 |     4 |
-  | sdwan bfd-jitter                        | 12513 |      9 |     56 |     4 |
-  | sdwan bfd-latency                       | 12514 |      9 |     60 |     4 |
   -----------------------------------------------------------------------------
 
 
@@ -33,9 +30,26 @@ import (
 12439,9,tloc_remote_color,string
 12440,9,tloc_tunnel_protocol,string
 
-12512,9,tloc_bfd_loss,unsigned32
-12513,9,tloc_bfd_jitter,unsigned32
-12514,9,tloc_bfd_latency,unsigned32
+  Client: Option options bfd-metrics-table
+  Exporter Format: IPFIX (Version 10)
+  Template ID    : 260
+  Source ID      : 6
+  Record Size    : 49
+  Template layout
+  _____________________________________________________________________________
+  |                 Field                   |    ID | Ent.ID | Offset |  Size |
+  -----------------------------------------------------------------------------
+  | TLOC TABLE OVERLAY SESSION ID           | 12435 |      9 |      0 |     4 |
+  | IP DSCP                                 |   195 |        |      4 |     1 |
+  | bfd loss                                | 12527 |      9 |      5 |     4 |
+  | bfd pfr update ts                       | 12530 |      9 |      9 |     8 |
+  | bfd avg latency                         | 12528 |      9 |     17 |     8 |
+  | bfd avg jitter                          | 12529 |      9 |     25 |     8 |
+  | bfd rx cnt                              | 12531 |      9 |     33 |     8 |
+  | bfd tx cnt                              | 12532 |      9 |     41 |     8 |
+  -----------------------------------------------------------------------------
+
+
 */
 
 type TLOCData struct {
@@ -116,6 +130,7 @@ func UpdateViptelaTLOCMap(d map[string]interface{}, AgentID string) error {
 	sessionid, has_sessionid := d["tloc_table_overlay_session_id"]
 	local_ip, has_local_ip := d["tloc_local_system_ip_address"]
 	local_color, has_local_color := d["tloc_local_color"]
+	_, has_bfd := d["cisco_sdwan_bfd_update_ts"]
 
 	if has_sessionid && has_local_ip && has_local_color {
 		//is Option Template, update db
@@ -123,36 +138,63 @@ func UpdateViptelaTLOCMap(d map[string]interface{}, AgentID string) error {
 		remote_color, _ := d["tloc_remote_color"]
 		protocol_id, _ := d["tloc_tunnel_protocol"]
 
+
+		key := TLOCMapKey {
+			AgentID: AgentID,
+			SessionID: sessionid.(uint32),
+		}
 		tlocdata := &TLOCData{
 			RemoteIP:    remote_ip.(net.IP),
 			RemoteColor: remote_color.(string),
 			LocalIP:     local_ip.(net.IP),
 			LocalColor:  local_color.(string),
 			Protocol:    protocol_id.(uint64),
-			Latency:     65535,
-			Jitter:      65535,
-			Loss:        100,
 		}
-
-		latencyT, exist := d["tloc_bfd_latency"]
+		oldT , exist := 	ViptelaTLocTable.Load(key)
 		if exist {
-			tlocdata.Latency = latencyT.(uint32)
+			old := oldT.(TLOCData)
+			tlocdata.Latency = old.Latency
+			tlocdata.Jitter = old.Jitter
+			tlocdata.Loss = old.Loss
 		}
-		jitterT, exist := d["tloc_bfd_jitter"]
-		if exist {
-			tlocdata.Jitter = jitterT.(uint32)
-		}
-		lossT, exist := d["tloc_bfd_loss"]
-		if exist {
-			tlocdata.Loss = lossT.(uint32)
-		}
-
 		err = UpdateTLOCDatabase(AgentID, sessionid.(uint32), tlocdata)
+	}
+
+	if has_sessionid && has_bfd {
+
+		key := TLOCMapKey {
+			AgentID: AgentID,
+			SessionID: sessionid.(uint32),
+		}
+
+		dataT , exist := ViptelaTLocTable.Load(key)
+		if exist {
+			data := dataT.(TLOCData)
+
+			r, err := FetchTLOCDatabaseByIndex(AgentID,sessionid.(uint32) )
+			if err == nil {
+				d["TLOCInfo"] = r
+			}
+			//update template measurement to data record
+			latencyT, ok := d["cisco_sdwan_bfd_latency"]
+			if ok {
+				data.Latency = uint32(latencyT.(uint64))
+			}
+			jitterT, ok := d["cisco_sdwan_bfd_jitter"]
+			if ok {
+				data.Jitter = uint32(jitterT.(uint64))
+			}
+			lossT, ok := d["cisco_sdwan_bfd_loss"]
+			if ok {
+				data.Loss = lossT.(uint32)
+			}
+			err = UpdateTLOCDatabase(AgentID, sessionid.(uint32), &data)
+		}
 	}
 
 	inputID, hasInputID := d["overlay_session_id_input"]
 	if hasInputID {
-		r, err := FetchTLOCDatabaseByIndex(AgentID, inputID.(uint32)+10000)
+		r, err := FetchTLOCDatabaseByIndex(AgentID, inputID.(uint32))
 		if err == nil {
 			d["input_TLOC_Session"] = r
 		}
@@ -160,7 +202,7 @@ func UpdateViptelaTLOCMap(d map[string]interface{}, AgentID string) error {
 
 	outputID, hasOutputID := d["overlay_session_id_output"]
 	if hasOutputID {
-		r, err := FetchTLOCDatabaseByIndex(AgentID, outputID.(uint32)+10000)
+		r, err := FetchTLOCDatabaseByIndex(AgentID, outputID.(uint32))
 		if err == nil {
 			d["output_TLOC_Session"] = r
 		}

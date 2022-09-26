@@ -1,6 +1,6 @@
 package datarecord
 
-var RecordTypeList = []string{"nat", "security", "queuedrop", "nimbleflow", "urlstats", "art", "conn", "rtp", "flow", "wireless", "viptela", "zbfw"}
+var RecordTypeList = []string{"nat", "security", "queuedrop", "nimbleflow", "urlstats", "art", "conn", "rtp", "flow", "wireless", "viptela", "viptelabfd", "zbfw"}
 
 func (d *DataFrame) TypeAssertion() {
 	if len(d.Record) < 1 {
@@ -34,6 +34,9 @@ func (d *DataFrame) TypeAssertion() {
 			d.Type = "rtp"
 		} else if isViptelaRecord(r) {
 			d.Type = "viptela"
+			return
+		} else if isViptelaBFDRecord(r) {
+			d.Type = "viptelabfd"
 			return
 		} else if isQueueDropRecord(r) {
 			d.Type = "queuedrop"
@@ -248,6 +251,15 @@ func isViptelaRecord(d map[string]interface{}) bool {
 	_, sessionIDinput := d["overlay_session_id_input"]
 	_, sessionIDoutput := d["overlay_session_id_output"]
 	if sessionIDinput || sessionIDoutput {
+		return true
+	}
+	return false
+}
+
+func isViptelaBFDRecord(d map[string]interface{}) bool {
+	_, a := d["overlay_session_id"]
+	_, b := d["cisco_sdwan_bfd_update_ts"]
+	if a && b {
 		return true
 	}
 	return false
