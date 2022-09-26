@@ -39,7 +39,7 @@ import (
 */
 
 type TLOCData struct {
-	Protocol    string
+	Protocol    uint64
 	LocalIP     net.IP
 	LocalColor  string
 	RemoteIP    net.IP
@@ -128,7 +128,7 @@ func UpdateViptelaTLOCMap(d map[string]interface{}, AgentID string) error {
 			RemoteColor: remote_color.(string),
 			LocalIP:     local_ip.(net.IP),
 			LocalColor:  local_color.(string),
-			Protocol:    protocol_id.(string),
+			Protocol:    protocol_id.(uint64),
 			Latency:     65535,
 			Jitter:      65535,
 			Loss:        100,

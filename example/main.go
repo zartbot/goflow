@@ -50,7 +50,7 @@ func main() {
 	}
 
 	var nfv9Collector []*netflowv9.NetflowV9Collector
-	for _, port := range []int{2055, 2056, 2057} {
+	for _, port := range []int{ 2057} {
 		c := netflowv9.NewNFV9Collector(ipaddr, port, NFv9DataFrameChan, 1)
 		nfv9Collector = append(nfv9Collector, c)
 	}
