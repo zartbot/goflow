@@ -257,7 +257,7 @@ func isViptelaRecord(d map[string]interface{}) bool {
 }
 
 func isViptelaBFDRecord(d map[string]interface{}) bool {
-	_, a := d["overlay_session_id"]
+	_, a := d["cisco_sdwan_bfd_jitter"]
 	_, b := d["cisco_sdwan_bfd_update_ts"]
 	if a && b {
 		return true
